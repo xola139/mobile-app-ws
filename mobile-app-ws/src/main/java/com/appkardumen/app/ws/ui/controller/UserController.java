@@ -1,5 +1,10 @@
 package com.appkardumen.app.ws.ui.controller;
 
+import java.util.Map;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +18,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.appkardumen.app.ws.exception.UserServiceException;
 import com.appkardumen.app.ws.ui.model.response.UserRest;
+import com.appkardumen.app.ws.ui.model.resquest.UpdateUserDetailsRequestModel;
 import com.appkardumen.app.ws.ui.model.resquest.UserDetailsRequestModel;
+import com.appkardumen.app.ws.userservice.UserService;
+import com.appkardumen.app.ws.userservice.impl.UserServiceImpl;
 
 @RestController
 @RequestMapping("users")
 public class UserController {
+	
+	Map<String,UserRest > users;
+	@Autowired
+	UserService userSerice;
+	
+	
 	
 	@GetMapping
 	public String getUsers(@RequestParam(value="page",defaultValue="1") int page, 
@@ -31,38 +46,44 @@ public class UserController {
 	@GetMapping(path="/{userId}",produces= {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE})
 	public ResponseEntity<UserRest> getUser(@PathVariable String userId) {
 			
-		UserRest returnValue = new UserRest();
-		returnValue.setEmail("elxola139@gmail.com");
-		returnValue.setFirtsName("Sergay");
-		returnValue.setLastName("Rosas");
-		returnValue.setUserId("xola19");
+		if(true)throw new  UserServiceException("A user service  exception is thrown");
 		
-		return new ResponseEntity<UserRest>(HttpStatus.ACCEPTED);
+		if(users.containsKey(userId)) {
+			return  new ResponseEntity<UserRest>(users.get(userId),HttpStatus.OK);
+		}else {
+			return  new ResponseEntity<UserRest>(HttpStatus.NO_CONTENT);
+		}
 	}
 	
 	@PostMapping(consumes= {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE},
 				produces= {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE})
-	public ResponseEntity<UserRest>  createUser(@RequestBody UserDetailsRequestModel userDetails) {
+	public ResponseEntity<UserRest>  createUser(@Valid @RequestBody UserDetailsRequestModel userDetails) {
 			
-		UserRest returnValue = new UserRest();
-		returnValue.setEmail(userDetails.getEmail());
-		returnValue.setFirtsName(userDetails.getFirstName());
-		returnValue.setLastName(userDetails.getLastName());
+ 
 		
-		
-		
-		return new ResponseEntity<UserRest> (returnValue,HttpStatus.OK);
+		UserRest returnValue = userSerice.createUser(userDetails);
+		return new ResponseEntity<UserRest> (returnValue,HttpStatus.OK );
 	}
 	
-	@PutMapping
-	public String updateUser() {
+	
+	@PutMapping(path="{userId}",consumes= {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE},
+	produces= {MediaType.APPLICATION_XML_VALUE,MediaType.APPLICATION_JSON_VALUE})
+	public UserRest updateUser(@PathVariable String userId, @Valid @RequestBody UpdateUserDetailsRequestModel userDetails ) {
 		
-		return "udate user";
+		UserRest storedUserDetails = users.get(userId);
+		storedUserDetails.setFirtsName(userDetails.getFirstName());
+		storedUserDetails.setLastName(userDetails.getLastName());
+		
+		users.put(userId, storedUserDetails);
+		
+		return storedUserDetails;
 	}
 	
-	@DeleteMapping
-	public String deleteUser() {
-		return "delete user";
+	@DeleteMapping(path="/{id}")
+	public ResponseEntity<Void> deleteUser(@PathVariable String id ) {
+		users.remove(id);
+		
+		return ResponseEntity.noContent().build();
 	}
 
 }
